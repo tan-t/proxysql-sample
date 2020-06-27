@@ -31,14 +31,6 @@ mysql_variables=
   monitor_password="pass"
 }
 
-mysql_replication_hostgroups =
-(
-  {
-    writer_hostgroup=0
-    reader_hostgroup=1
-    comment="host groups"
-  }
-)
 
 mysql_servers =
 (
@@ -57,22 +49,15 @@ mysql_query_rules =
   {
     rule_id=1
     active=1
-    match_pattern="^SELECT .* FOR UPDATE"
+    schemaname="hoge"
     destination_hostgroup=0
     apply=1
   },
   {
     rule_id=2
     active=1
-    match_pattern="^SELECT .*"
+    schemaname="fuga"
     destination_hostgroup=1
-    apply=1
-  },
-  {
-    rule_id=3
-    active=1
-    match_pattern=".*"
-    destination_hostgroup=0
     apply=1
   }
 )
