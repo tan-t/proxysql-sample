@@ -1,0 +1,16 @@
+default: &default
+  adapter: mysql2
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  # database: tenant1
+  # username: root
+  # password: root
+  # host: db-primary
+  # port: 3306
+  database: base
+  username: root
+  password: root
+  host: proxysql
+  port: 6033

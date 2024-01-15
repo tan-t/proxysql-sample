@@ -1,51 +1,63 @@
-version: '3'
-
 services:
+  initializers:
+    build: .
+    command: bash -c "bin/rails db:migrate"
+    volumes:
+      - .:/usr/src/app
+      - bundle:/usr/local/bundle
+      - tmp:/usr/src/app/tmp
+    environment:
+      - HISTFILE=/usr/src/app/log/.bash_history
+    depends_on:
+      - proxysql
+      - redis
+  web:
+    build: .
+    command: bash -c "rm -f tmp/pids/server.pid && bin/rails s -p 3000 -b '0.0.0.0'"
+    volumes:
+      - .:/usr/src/app
+      - bundle:/usr/local/bundle
+      - tmp:/usr/src/app/tmp
+    ports:
+      - "3000:3000"
+    environment:
+      - HISTFILE=/usr/src/app/log/.bash_history
+    depends_on:
+      - initializers
   proxysql:
-    image: severalnines/proxysql
+    image: proxysql/proxysql
     volumes:
       - ./proxysql.cnf:/etc/proxysql.cnf
-    ports:
-      - '6032:6032'
-      - '6033:6033'
-    links:
-      - db-primary
-      - db-secondary
-
-  db-primary:
-    build:
-      context: .
-      dockerfile: db/primary/Dockerfile
-    # image: mysql:5.7
-    ports:
-      - "3306:3306"
-    volumes:
-      - db-data:/var/lib/mysql
-      - ./db/init/:/docker-entrypoint-initdb.d/
-    environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: 1
-      MYSQL_DATABASE: hoge
-      MYSQL_USER: proxysql
-      MYSQL_PASSWORD: pass
-      TZ: "Asia/Tokyo"
-
-  db-secondary:
-    build:
-      context: .
-      dockerfile: db/secondary/Dockerfile
-    ports:
-      - '13306:3306'
     depends_on:
       - db-primary
-    tmpfs: /var/lib/mysql
-    volumes:
-      - ./db/init-secondary/:/docker-entrypoint-initdb.d/
+      - db-secondary
+  db-primary:
+    image: mysql
+    restart: always
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: 1
-      MYSQL_DATABASE: fuga
-      MYSQL_USER: proxysql
-      MYSQL_PASSWORD: pass
-      TZ: "Asia/Tokyo"
+      - MYSQL_ROOT_PASSWORD=root
+    command: --default-authentication-plugin=mysql_native_password --general-log=1
+    volumes:
+      - db-primary:/var/lib/mysql
+      - ./scripts/db-primary:/docker-entrypoint-initdb.d
+  db-secondary:
+    image: mysql
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password --general-log=1
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    volumes:
+      - db-secondary:/var/lib/mysql
+      - ./scripts/db-secondary:/docker-entrypoint-initdb.d
+
+  redis:
+    image: redis
+    volumes:
+      - redis_data:/data
 
 volumes:
-  db-data: {}
+  redis_data:
+  bundle:
+  tmp:
+  db-primary:
+  db-secondary:
